@@ -3,6 +3,8 @@
 A modular, AI-powered security scanner that detects sensitive data, analyzes logs in real-time, and generates actionable insights using Google Gemini AI.
 
 ---
+##Deployed Linl
+https://ai-log-analyser-smv6.onrender.com/
 
 ## What It Does
 
