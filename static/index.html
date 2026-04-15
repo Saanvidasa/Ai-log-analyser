@@ -53,7 +53,6 @@
   .toggle input:checked+.sl{background:var(--accent);}
   .toggle input:checked+.sl:before{transform:translateX(16px);}
 
-  /* Stream mode toggle */
   .stream-row{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid var(--border);background:rgba(99,102,241,.05);}
   .stream-row label{font-size:11px;color:var(--accent2);font-family:var(--mono);display:flex;align-items:center;gap:6px;cursor:pointer;}
 
@@ -63,7 +62,6 @@
   .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:none;}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* Right panel */
   .right{display:flex;flex-direction:column;overflow:hidden;}
   .rh{padding:14px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--bg2);flex-shrink:0;}
   .rh h2{font-size:12px;font-weight:600;}
@@ -72,14 +70,12 @@
   .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);text-align:center;gap:10px;}
   .empty .ei{font-size:44px;opacity:.25;}
 
-  /* Stream progress */
   .stream-progress{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
   .sp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:12px;}
   .progress-bar{background:var(--border);border-radius:4px;height:6px;overflow:hidden;}
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .3s;}
   .stream-log{margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--muted);max-height:80px;overflow-y:auto;line-height:1.6;}
 
-  /* Risk badge */
   .rb{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
   .r-none,.r-low{background:rgba(34,197,94,.1);color:var(--green);}
   .r-medium{background:rgba(245,158,11,.1);color:var(--yellow);}
@@ -99,7 +95,6 @@
   .ins{display:flex;align-items:flex-start;gap:7px;font-size:11px;color:var(--muted);line-height:1.5;}
   .ins::before{content:'→';color:var(--accent2);flex-shrink:0;}
 
-  /* Anomalies + Correlations */
   .adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
   .adv-card{background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:14px;}
   .adv-card h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;}
@@ -107,7 +102,6 @@
   .adv-item:last-child{border-bottom:none;}
   .adv-type{font-family:var(--mono);font-size:10px;color:var(--accent2);}
 
-  /* Findings table */
   .fs h3{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px;}
   table{width:100%;border-collapse:collapse;font-size:11px;}
   th{text-align:left;padding:7px 10px;font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500;}
@@ -120,7 +114,6 @@
 
   .alert{background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.3);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:var(--orange);display:flex;gap:8px;}
 
-  /* processing badge */
   .proc-info{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
   .pi{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 8px;font-family:var(--mono);font-size:10px;color:var(--muted);}
 
@@ -215,7 +208,8 @@ ERROR NullPointerException at App.java:45"></textarea>
 </div>
 
 <script>
-let curType = 'text', uploadedContent = null;
+let curType = 'text';
+let uploadedFile = null; // store the actual File object for FormData
 
 function setType(t, el) {
   curType = t;
@@ -226,63 +220,119 @@ function setType(t, el) {
 }
 
 function handleFile(inp) {
-  const f = inp.files[0]; if(!f) return;
+  const f = inp.files[0];
+  if (!f) return;
+  uploadedFile = f; // keep the real File object — needed for FormData upload
   document.getElementById('fname').textContent = '📄 ' + f.name;
-  const r = new FileReader();
-  r.onload = e => { uploadedContent = e.target.result; };
-  r.readAsText(f);
 }
 
 const dz = document.getElementById('dz');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
 dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('over');
+  e.preventDefault();
+  dz.classList.remove('over');
   const f = e.dataTransfer.files[0];
-  if(f){ const dt=new DataTransfer(); dt.items.add(f); document.getElementById('fi').files=dt.files; handleFile(document.getElementById('fi')); }
+  if (f) {
+    const dt = new DataTransfer();
+    dt.items.add(f);
+    document.getElementById('fi').files = dt.files;
+    handleFile(document.getElementById('fi'));
+  }
 });
 
 function setLoading(on) {
-  const btn=document.getElementById('abtn'),sp=document.getElementById('spin'),bt=document.getElementById('btxt');
-  btn.disabled=on; sp.style.display=on?'block':'none'; bt.textContent=on?'Analyzing...':'🔍 Analyze';
+  const btn = document.getElementById('abtn');
+  const sp  = document.getElementById('spin');
+  const bt  = document.getElementById('btxt');
+  btn.disabled = on;
+  sp.style.display = on ? 'block' : 'none';
+  bt.textContent = on ? 'Analyzing...' : '🔍 Analyze';
 }
 
 async function runAnalysis() {
-  let content='', inputType=curType;
-  if(curType==='file'){
-    if(!uploadedContent){alert('Please select a file first.');return;}
-    content=uploadedContent; inputType='log';
-  } else {
-    content=document.getElementById('content').value.trim();
-    if(!content){alert('Please enter content to analyze.');return;}
+  // ── File upload path — uses multipart FormData → /analyze/upload ──────────
+  if (curType === 'file') {
+    if (!uploadedFile) { alert('Please select a file first.'); return; }
+    setLoading(true);
+    try {
+      await runFileUpload(uploadedFile);
+    } catch (e) {
+      document.getElementById('rc').innerHTML =
+        `<div style="color:var(--red);padding:20px;font-family:var(--mono);font-size:12px;">⚠ Error: ${e.message}</div>`;
+    } finally {
+      setLoading(false);
+    }
+    return;
   }
 
-  const streamMode = document.getElementById('o-stream').checked && inputType==='log';
+  // ── Text / log / sql / chat path ──────────────────────────────────────────
+  const content = document.getElementById('content').value.trim();
+  if (!content) { alert('Please enter content to analyze.'); return; }
+
+  const streamMode = document.getElementById('o-stream').checked && curType === 'log';
   setLoading(true);
 
   try {
-    if(streamMode) {
+    if (streamMode) {
       await runStreaming(content);
     } else {
-      await runStandard(content, inputType);
+      await runStandard(content, curType);
     }
-  } catch(e) {
-    document.getElementById('rc').innerHTML = `<div style="color:var(--red);padding:20px;font-family:var(--mono);font-size:12px;">⚠ Error: ${e.message}</div>`;
+  } catch (e) {
+    document.getElementById('rc').innerHTML =
+      `<div style="color:var(--red);padding:20px;font-family:var(--mono);font-size:12px;">⚠ Error: ${e.message}</div>`;
   } finally {
     setLoading(false);
   }
 }
 
-async function runStandard(content, inputType) {
-  const options = { mask: document.getElementById('o-mask').checked, block_high_risk: document.getElementById('o-block').checked, log_analysis: document.getElementById('o-log').checked };
-  const res = await fetch('/analyze', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({input_type:inputType, content, options})
-  });
-  if(!res.ok){ const e=await res.json(); throw new Error(e.detail||'Analysis failed'); }
+// ── Send file as multipart to /analyze/upload ─────────────────────────────────
+async function runFileUpload(file) {
+  const fd = new FormData();
+  fd.append('file', file);
+
+  const res = await fetch('/analyze/upload', { method: 'POST', body: fd });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(e.detail || 'Upload failed');
+  }
   renderResults(await res.json());
 }
 
+// ── Detect if pasted content looks like a log ────────────────────────────────
+function detectInputType(content, declaredType) {
+  // If user explicitly chose log/sql/chat, respect that
+  if (declaredType !== 'text') return declaredType;
+  // Auto-upgrade plain "text" to "log" if content has log signals
+  const sample = content.slice(0, 1000).toUpperCase();
+  const logKeywords = ['ERROR', 'FATAL', 'CRITICAL', 'WARN', 'DEBUG', 'INFO',
+                       'TRACE', 'EXCEPTION', 'TRACEBACK', 'FAILED LOGIN',
+                       'AUTHENTICATION FAILED', 'UNAUTHORIZED', 'NULLPOINTEREXCEPTION'];
+  const hasKeyword = logKeywords.some(k => sample.includes(k));
+  const hasTimestamp = /\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}/.test(content.slice(0, 1000));
+  return (hasKeyword || hasTimestamp) ? 'log' : 'text';
+}
+
+// ── Standard JSON analyze ─────────────────────────────────────────────────────
+async function runStandard(content, inputType) {
+  // Auto-detect log content even when pasted into the text tab
+  const resolvedType = detectInputType(content, inputType);
+  const options = {
+    mask: document.getElementById('o-mask').checked,
+    block_high_risk: document.getElementById('o-block').checked,
+    log_analysis: document.getElementById('o-log').checked
+  };
+  const res = await fetch('/analyze', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input_type: resolvedType, content, options })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.detail || 'Analysis failed'); }
+  renderResults(await res.json());
+}
+
+// ── Streaming ─────────────────────────────────────────────────────────────────
 async function runStreaming(content) {
   const rc = document.getElementById('rc');
   rc.innerHTML = `
@@ -296,129 +346,158 @@ async function runStreaming(content) {
     </div>`;
 
   const res = await fetch('/analyze/stream', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({input_type:'log', content, options:{}})
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input_type: 'log', content, options: {} })
   });
 
-  const reader = res.body.getReader();
+  const reader  = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
 
-  while(true) {
-    const {done, value} = await reader.read();
-    if(done) break;
-    buffer += decoder.decode(value, {stream:true});
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop();
-    for(const line of lines) {
-      if(!line.startsWith('data:')) continue;
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
       try {
         const evt = JSON.parse(line.slice(5).trim());
-        if(evt.event==='chunk') {
-          document.getElementById('sp-bar').style.width = evt.progress+'%';
-          document.getElementById('sp-pct').textContent = evt.progress+'%';
+        if (evt.event === 'chunk') {
+          document.getElementById('sp-bar').style.width = evt.progress + '%';
+          document.getElementById('sp-pct').textContent = evt.progress + '%';
           const log = document.getElementById('sp-log');
           log.innerHTML += `chunk ${evt.chunk}/${evt.total} — ${evt.findings_so_far} findings so far\n`;
           log.scrollTop = log.scrollHeight;
-        } else if(evt.event==='complete') {
-          // render a simplified result
-          renderStreamComplete(evt);
+        } else if (evt.event === 'complete') {
+          // ── FIX: stream complete renders full results via renderResults ──
+          // Normalise the stream complete payload to match the standard response shape
+          const normalised = {
+            summary:          evt.summary || '⚡ Streaming analysis complete',
+            content_type:     'log',
+            findings:         evt.findings         || [],
+            risk_score:       evt.risk_score       ?? 0,
+            risk_level:       evt.risk_level       || 'none',
+            action:           evt.action           || 'allowed',
+            insights:         evt.insights         || [],
+            total_findings:   evt.total_findings   ?? (evt.findings || []).length,
+            findings_by_risk: evt.findings_by_risk || { critical:0, high:0, medium:0, low:0 },
+            anomalies:        evt.anomalies        || [],
+            correlations:     evt.correlations     || [],
+            brute_force_detected: evt.brute_force_detected || null,
+            processing: {
+              chunks_processed: evt.total_chunks || 1,
+              large_file:       (evt.total_chunks || 1) > 1,
+              total_lines:      evt.total_lines  || 0,
+            }
+          };
+          renderResults(normalised);
         }
-      } catch(e){}
+      } catch (e) { /* malformed SSE line — skip */ }
     }
   }
 }
 
-function renderStreamComplete(evt) {
-  const rc = document.getElementById('rc');
-  const riskColors = {none:'#22c55e',low:'#22c55e',medium:'#f59e0b',high:'#f97316',critical:'#dc2626'};
-  let rows = (evt.findings||[]).slice(0,50).map(f => `
-    <tr><td><span class="ln">${f.line}</span></td>
-    <td><span class="chip">${f.type}</span></td>
-    <td><span class="rb r-${f.risk}">${f.risk}</span></td>
-    <td><span class="mv">${esc(f.value||'')}</span></td>
-    <td><span class="rl">${esc((f.raw_line||'').slice(0,100))}</span></td></tr>`).join('');
-
-  rc.innerHTML = `
-    <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:9px;padding:12px 14px;margin-bottom:14px;font-size:11px;color:var(--accent2);">
-      ⚡ Streamed analysis complete — ${evt.total_findings} findings across all chunks
-    </div>
-    <div class="fs"><h3>Findings (${evt.total_findings})</h3>
-    <table><thead><tr><th>Line</th><th>Type</th><th>Risk</th><th>Value</th><th>Context</th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No sensitive patterns detected</td></tr>'}</tbody></table></div>`;
-}
-
+// ── Shared full-result renderer (used by ALL three paths) ─────────────────────
 function renderResults(d) {
-  const riskColors={none:'#22c55e',low:'#22c55e',medium:'#f59e0b',high:'#f97316',critical:'#dc2626'};
-  const color = riskColors[d.risk_level]||'#7c8090';
+  const riskColors = { none:'#22c55e', low:'#22c55e', medium:'#f59e0b', high:'#f97316', critical:'#dc2626' };
+  const color = riskColors[d.risk_level] || '#7c8090';
 
-  document.getElementById('risk-badge').style.display='flex';
-  document.getElementById('risk-badge').innerHTML=`<span class="rb r-${d.risk_level}">● ${d.risk_level}</span>`;
-  document.getElementById('act-badge').style.display='flex';
-  document.getElementById('act-badge').innerHTML=`<span style="font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2)">${d.action}</span>`;
+  // Update header badges
+  document.getElementById('risk-badge').style.display = 'flex';
+  document.getElementById('risk-badge').innerHTML =
+    `<span class="rb r-${d.risk_level}">● ${d.risk_level}</span>`;
+  document.getElementById('act-badge').style.display = 'flex';
+  document.getElementById('act-badge').innerHTML =
+    `<span style="font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;` +
+    `padding:3px 9px;border-radius:5px;background:var(--bg3);border:1px solid var(--border2)">${d.action}</span>`;
 
-  // Processing info
-  const proc = d.processing||{};
+  // Processing pills
+  const proc = d.processing || {};
   let procHtml = '';
-  if(proc.total_lines) procHtml += `<span class="pi">${proc.total_lines} lines</span>`;
-  if(proc.chunks_processed > 1) procHtml += `<span class="pi">chunked: ${proc.chunks_processed} parts</span>`;
+  if (proc.total_lines)         procHtml += `<span class="pi">${proc.total_lines} lines</span>`;
+  if (proc.chunks_processed > 1) procHtml += `<span class="pi">chunked: ${proc.chunks_processed} parts</span>`;
   procHtml += `<span class="pi">${d.content_type}</span>`;
 
   // Anomalies
-  let anomHtml = '';
-  if(d.anomalies && d.anomalies.length > 0) {
-    anomHtml = d.anomalies.map(a=>`
-      <div class="adv-item">
-        <div class="adv-type">${a.type}</div>
-        <div style="margin-top:3px">${esc(a.message)}</div>
-        ${a.lines&&a.lines.length?`<div style="color:var(--muted);font-size:10px;margin-top:2px">lines: ${a.lines.join(', ')}</div>`:''}
-        <span class="rb r-${a.risk}" style="margin-top:4px;display:inline-flex">${a.risk}</span>
-      </div>`).join('');
-  } else {
-    anomHtml = '<div style="color:var(--muted);font-size:11px">No anomalies detected</div>';
-  }
+  const anomalies = d.anomalies || [];
+  const anomHtml = anomalies.length
+    ? anomalies.map(a => `
+        <div class="adv-item">
+          <div class="adv-type">${esc(a.type)}</div>
+          <div style="margin-top:3px">${esc(a.message)}</div>
+          ${a.lines && a.lines.length ? `<div style="color:var(--muted);font-size:10px;margin-top:2px">lines: ${a.lines.join(', ')}</div>` : ''}
+          <span class="rb r-${a.risk}" style="margin-top:4px;display:inline-flex">${a.risk}</span>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:11px">No anomalies detected</div>';
 
   // Correlations
-  let corrHtml = '';
-  if(d.correlations && d.correlations.length > 0) {
-    corrHtml = d.correlations.map(c=>`
-      <div class="adv-item">
-        <div class="adv-type">${c.type}</div>
-        <div style="margin-top:3px">${esc(c.message)}</div>
-        <span class="rb r-${c.risk}" style="margin-top:4px;display:inline-flex">${c.risk}</span>
-      </div>`).join('');
-  } else {
-    corrHtml = '<div style="color:var(--muted);font-size:11px">No correlations found</div>';
-  }
+  const correlations = d.correlations || [];
+  const corrHtml = correlations.length
+    ? correlations.map(c => `
+        <div class="adv-item">
+          <div class="adv-type">${esc(c.type)}</div>
+          <div style="margin-top:3px">${esc(c.message)}</div>
+          <span class="rb r-${c.risk}" style="margin-top:4px;display:inline-flex">${c.risk}</span>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:11px">No correlations found</div>';
 
-  // Brute force
+  // Brute force alert
   let bfHtml = '';
-  if(d.brute_force_detected?.detected) {
-    bfHtml = `<div class="alert">⚠ <div><strong>Brute Force Detected</strong><br>${esc(d.brute_force_detected.message)} — lines: ${d.brute_force_detected.lines.join(', ')}</div></div>`;
+  if (d.brute_force_detected && d.brute_force_detected.detected) {
+    bfHtml = `<div class="alert">⚠ <div><strong>Brute Force Detected</strong><br>
+      ${esc(d.brute_force_detected.message)} — lines: ${d.brute_force_detected.lines.join(', ')}</div></div>`;
   }
 
-  // Findings rows
-  let rows = '';
-  if(d.findings && d.findings.length > 0) {
-    rows = d.findings.map(f=>`
-      <tr><td><span class="ln">${f.line}</span></td>
-      <td><span class="chip">${f.type}</span></td>
-      <td><span class="rb r-${f.risk}">${f.risk}</span></td>
-      <td><span class="mv">${esc(f.value||'')}</span></td>
-      <td><span class="rl">${esc((f.raw_line||f.description||'').slice(0,100))}</span></td></tr>`).join('');
-  } else {
-    rows = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No sensitive patterns detected</td></tr>';
-  }
+  // Findings table rows
+  const findings = d.findings || [];
+  const rows = findings.length
+    ? findings.map(f => `
+        <tr>
+          <td><span class="ln">${f.line}</span></td>
+          <td><span class="chip">${esc(f.type)}</span></td>
+          <td><span class="rb r-${f.risk}">${f.risk}</span></td>
+          <td><span class="mv">${esc(f.value || '')}</span></td>
+          <td><span class="rl">${esc((f.raw_line || f.description || '').slice(0, 100))}</span></td>
+        </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No sensitive patterns detected</td></tr>';
 
-  const insightsHtml = (d.insights||[]).map(i=>`<div class="ins">${esc(i)}</div>`).join('');
+  // AI insights
+  const insightsHtml = (d.insights || []).map(i => `<div class="ins">${esc(i)}</div>`).join('');
+
+  // Advanced section — always shown for log type, hidden for others
+  const isLog = d.content_type === 'log';
+  const advHtml = isLog ? `
+    <div class="adv-grid">
+      <div class="adv-card"><h3>Anomalies (${anomalies.length})</h3>${anomHtml}</div>
+      <div class="adv-card"><h3>Correlations (${correlations.length})</h3>${corrHtml}</div>
+    </div>` : '';
 
   document.getElementById('rc').innerHTML = `
     <div class="proc-info">${procHtml}</div>
     <div class="stats">
-      <div class="sc"><div class="lbl">Risk Score</div><div class="val" style="color:${color}">${d.risk_score}/20</div><div class="sub">overall</div></div>
-      <div class="sc"><div class="lbl">Findings</div><div class="val">${d.total_findings}</div><div class="sub">patterns matched</div></div>
-      <div class="sc"><div class="lbl">Critical</div><div class="val" style="color:var(--critical)">${d.findings_by_risk?.critical||0}</div><div class="sub">+ ${d.findings_by_risk?.high||0} high</div></div>
-      <div class="sc"><div class="lbl">Anomalies</div><div class="val" style="color:var(--yellow)">${(d.anomalies||[]).length}</div><div class="sub">+ ${(d.correlations||[]).length} corr.</div></div>
+      <div class="sc">
+        <div class="lbl">Risk Score</div>
+        <div class="val" style="color:${color}">${d.risk_score}/20</div>
+        <div class="sub">overall</div>
+      </div>
+      <div class="sc">
+        <div class="lbl">Findings</div>
+        <div class="val">${d.total_findings}</div>
+        <div class="sub">patterns matched</div>
+      </div>
+      <div class="sc">
+        <div class="lbl">Critical</div>
+        <div class="val" style="color:var(--critical)">${(d.findings_by_risk || {}).critical || 0}</div>
+        <div class="sub">+ ${(d.findings_by_risk || {}).high || 0} high</div>
+      </div>
+      <div class="sc">
+        <div class="lbl">Anomalies</div>
+        <div class="val" style="color:var(--yellow)">${anomalies.length}</div>
+        <div class="sub">+ ${correlations.length} corr.</div>
+      </div>
     </div>
     ${bfHtml}
     <div class="ai-box">
@@ -426,17 +505,19 @@ function renderResults(d) {
       <div class="ai-sum">${esc(d.summary)}</div>
       <div class="ins-list">${insightsHtml}</div>
     </div>
-    ${d.content_type==='log' ? `
-    <div class="adv-grid">
-      <div class="adv-card"><h3>Anomalies (${(d.anomalies||[]).length})</h3>${anomHtml}</div>
-      <div class="adv-card"><h3>Correlations (${(d.correlations||[]).length})</h3>${corrHtml}</div>
-    </div>` : ''}
-    <div class="fs"><h3>All Findings (${d.total_findings})</h3>
-    <table><thead><tr><th>Line</th><th>Type</th><th>Risk</th><th>Value</th><th>Context</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+    ${advHtml}
+    <div class="fs">
+      <h3>All Findings (${d.total_findings})</h3>
+      <table>
+        <thead><tr><th>Line</th><th>Type</th><th>Risk</th><th>Value</th><th>Context</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
-function esc(s){ return s?(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'):''; }
+function esc(s) {
+  return s ? (s + '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+}
 </script>
 </body>
 </html>
